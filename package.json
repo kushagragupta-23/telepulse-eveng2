@@ -1,0 +1,32 @@
+{
+  "name": "telepulse-g2-hud",
+  "private": true,
+  "version": "0.1.0",
+  "description": "TelePulse HUD — Heads-Up Telegram Sentinel, AI Voice Responder & Hyperliquid/Polymarket DeFi Terminal for Even Realities G2 Smart Glasses",
+  "author": "Kushagra Gupta",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "server": "npx tsx server/standalone.ts",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "pack": "npm run build && evenhub pack app.json dist -o telepulse.ehpk",
+    "simulate": "evenhub-simulator http://localhost:5173",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@evenrealities/even_hub_sdk": "0.0.16"
+  },
+  "devDependencies": {
+    "@evenrealities/evenhub-cli": "0.2.0",
+    "@evenrealities/evenhub-simulator": "0.9.5",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@types/node": "20.17.19",
+    "playwright": "^1.65.1",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3",
+    "vite": "5.4.14",
+    "vitest": "2.1.8"
+  }
+}

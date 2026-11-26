@@ -1,0 +1,26 @@
+{
+  "package_id": "com.kushagragupta.telepulse",
+  "edition": "202601",
+  "name": "TelePulse HUD",
+  "version": "0.1.0",
+  "min_sdk_version": "0.0.16",
+  "entrypoint": "index.html",
+  "permissions": [
+    {
+      "name": "g2-microphone",
+      "desc": "Capture voice commands and quick Telegram replies from the glasses 4-microphone array."
+    },
+    {
+      "name": "network",
+      "desc": "Connect to the TelePulse backend proxy for Telegram digests, AI reply drafting, and live Hyperliquid/Polymarket testnet & market feeds.",
+      "whitelist": [
+        "http://localhost:5173",
+        "http://localhost:8787",
+        "https://api.hyperliquid.xyz",
+        "https://api.hyperliquid-testnet.xyz",
+        "https://gamma-api.polymarket.com"
+      ]
+    }
+  ],
+  "supported_languages": ["en"]
+}
