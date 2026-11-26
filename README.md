@@ -1,146 +1,188 @@
-# TelePulse HUD
+<div align="center">
 
-**Heads-Up Telegram Sentinel, AI Voice Responder & Testnet DeFi Terminal for Even Realities G2 smart glasses.**
+# TELEPULSE HUD
 
-Track 01 — **Messaging & News** (Telegram, live Bot API)
-Track 02 — **Crypto & DeFi** (Hyperliquid · Polymarket · Gram Wallet)
-Also entered for **Best Telegram integration** and the Grand Prize.
+### Read Telegram. Write back. Trade the signal — all without touching your phone.
 
-Built by **Kushagra Gupta** — Heads Up: Even Realities Hackathon (Nov 23–29, 2026).
+**Heads-Up Telegram Sentinel · AI Voice Responder · Testnet DeFi Terminal**  
+for **Even Realities G2** smart glasses
+
+[![Heads Up Hackathon](https://img.shields.io/badge/Heads_Up-Even_Realities_Hackathon-46ff8c)](https://dorahacks.io/hackathon/even-realities)
+[![Track 01](https://img.shields.io/badge/Track_01-Messaging_%26_News_(Telegram)-0a0f0c)](https://dorahacks.io/hackathon/even-realities)
+[![Track 02](https://img.shields.io/badge/Track_02-Crypto_%26_DeFi-0a0f0c)](https://dorahacks.io/hackathon/even-realities)
+[![Special](https://img.shields.io/badge/Prize-Best_Telegram_Integration-0a0f0c)](https://dorahacks.io/hackathon/even-realities)
+[![SDK](https://img.shields.io/badge/Even_Hub_SDK-0.0.16-17301f)](https://www.npmjs.com/package/@evenrealities/even_hub_sdk)
+[![License](https://img.shields.io/badge/License-MIT-6f8f7d)](LICENSE)
+
+**Builder:** [Kushagra Gupta](https://github.com/kushagragupta-23) · Built during build week, Nov 23–29 2026
+
+</div>
 
 ---
 
-## The problem it solves
+## Demo
 
-Crypto-native founders and operators live on Telegram alpha channels, signal
-groups and founder DMs — but every raw notification is noise, and signal chats
-are full of drainer links. Meanwhile the *actionable* part of those messages
-(odds moves, perp breakouts, quick confirmations) dies on the phone screen.
+<video src="https://github.com/kushagragupta-23/telepulse-eveng2/raw/main/docs/telepulse-demo.mp4" controls width="100%"></video>
 
-**TelePulse HUD** is a read-and-write ambient layer on G2:
+> **▶ [Watch the 90-second demo](docs/telepulse-demo.mp4)** — voiceover walkthrough of the full read-and-write loop. No glasses? Same file runs in the browser lens below.
 
-1. **Glance** — one thing that matters: a sieved Telegram card, a Polymarket
-   odds move, or your paper PnL. 576×288 monochrome, one glance card at a time.
-2. **Write in seconds** — tap to send an AI-drafted reply or execute the
-   signal's linked **testnet** trade; long-press to dictate a voice command;
-   R1 ring cycles reply drafts. No phone, no dashboard.
+[![TelePulse HUD on the G2 waveguide](docs/poster.png)](docs/telepulse-demo.mp4)
 
-## Read & write on G2 (the demo loop)
+---
 
-| Gesture | Action |
+## One glance is all it takes
+
+We all live on Telegram — alpha groups, founder chats, trading bots. But every ping
+fights for your phone, half of them are scams, and the *actionable* ones die waiting
+for you to unlock a screen.
+
+**TelePulse HUD** moves that whole loop into your glasses:
+
+> A whale alert lands on Telegram → the HUD shows one glance card → you tap once →
+> the linked trade executes on Hyperliquid testnet → the receipt lands back in the
+> same thread. **Three seconds. Phone never leaves your pocket.**
+
+## The read & write loop
+
+| Gesture | What it does |
 |---|---|
-| Swipe ▲▼ | Move through the glance queue / desks |
-| **Tap** | Smart action — send drafted Telegram reply *or* execute the linked paper trade (Hyperliquid testnet / Polymarket paper) |
-| **R1 ring tap** | Cycle AI reply drafts (hands stay on the wheel) |
-| **Long-press → release** | Push-to-talk voice: *"paper long ETH 250"* → parsed → executed; or a plain sentence → sent as a Telegram reply |
-| **Contextual menu** (OS) | Switch desks: Telegram · HL Perps · Polymarket · Gram Wallet · Activity · Refresh |
-| **Double-tap** | System exit-confirmation dialog (required `shutDownPageContainer(1)` QA path) |
+| **Swipe ▲▼** | Move through the glance queue — Telegram cards, markets, positions |
+| **Tap** | *Smart action* — send the AI-drafted reply, or execute the signal's linked paper trade |
+| **R1 ring tap** | Cycle AI-drafted replies without touching anything else |
+| **Long-press → release** | Push-to-talk: *"paper long SOL, two fifty dollars"* → parsed → executed; or speak a reply → sent to Telegram |
+| **Glasses menu** | Switch desks: Telegram · HL Perps · Polymarket · Gram Wallet · Activity · Refresh |
+| **Double-tap** | System exit-confirmation dialog (`shutDownPageContainer(1)` — the QA-required path) |
+
+## Why judges should care
+
+| Rubric | How TelePulse hits it |
+|---|---|
+| **Usefulness on G2 — 30%** | A real daily loop for the exact user: Telegram signal groups → instant action, works phone-locked |
+| **Read & write — 25%** | Tap/ring/voice writes in <3s; AI drafts beat dictation; signal→trade is one tap end-to-end |
+| **Technical — 20%** | Live `allMids` marks, real Telegram Bot bridge, serialized image pipeline, debounced BLE-safe render queue, 11 unit tests |
+| **UX — 15%** | 5-container layout, `textColor` brightness hierarchy, threat-dimmed phishing cards, sparkline via `updateImageRawData` |
+| **Business & safety — 10%** | Paper/testnet only, zero custody, secrets on the proxy, drainer sieve kills phishing before the lens |
 
 ## Architecture
 
 ```
-G2 glasses  ◄─BLE─►  Even App WebView (this app, Even Hub SDK)
-                        │
-                        ├─ HudEngine        → container layout, event routing, voice FSM
-                        ├─ BrowserEvenAdapter → dev/demo: renders the REAL containers on screen
-                        │
-                        ▼  /api/* (whitelisted in app.json, CORS-clean)
-              Backend proxy (server/api.ts — secrets NEVER in the .ehpk)
-                ├─ Telegram Bot API   → live poll + sendMessage (optional token)
-                ├─ Hyperliquid /info  → live allMids marks + funding
-                ├─ Polymarket Gamma   → event odds (live)
-                ├─ Paper engine       → positions, PnL, margin (testnet-only, no custody)
-                ├─ Threat sieve       → drainer/phishing URLs blocked before the lens
-                └─ Voice intent       → transcript → REPLY | PAPER_TRADE | SWITCH_MODE
+G2 glasses ◄─BLE─► Even App WebView (this app · Even Hub SDK)
+                     │
+                     ├─ HudEngine          576×288 containers · event routing · voice FSM
+                     ├─ BrowserEvenAdapter renders the REAL containers in-browser (glasses-free demo)
+                     │
+                     ▼ /api/* (whitelisted in app.json · CORS-clean)
+           Backend proxy — secrets NEVER ship in the .ehpk
+             ├─ Telegram Bot API   live poll + sendMessage
+             ├─ Hyperliquid /info  live allMids marks + funding
+             ├─ Polymarket Gamma   live event odds
+             ├─ Paper engine       positions · PnL · margin (testnet only)
+             ├─ Threat sieve       drainer/phishing URLs blocked pre-display
+             └─ Voice intent       transcript → REPLY | PAPER_TRADE | SWITCH_MODE
 ```
 
-Display engine uses: `createStartUpPageContainer` → `textContainerUpgrade`
-(flicker-free live text) → `updateImageRawData` (serialized grey4 sparkline
-frames) → `rebuildPageContainer` on desk switch → `menuObject` contextual menu →
-`audioControl` + `audioEvent` PCM capture → `shutDownPageContainer(1)` exit.
-All 5 containers set `zOrderIndex` (all-or-nothing rule), `textColor` levels
-0–4 for hierarchy, exactly one `isEventCapture: 1`.
+## The HUD, container by container
 
-## Run it (no glasses needed)
+```
+┌ hdr ───────────────────────────────────────────┐  text · brightness 4
+│ TELEPULSE · 11:46 · LIVE · TG:4                │
+├ main ────────────────────────────┬ side ───────┤  text · capture · border 7
+│ Hyperliquid Whale Perps Alert    │ ETH-PERP    │  text · brightness 3
+│ HL Sentinel Bot · 1m ago         │ $1,684      │
+│ ETH-PERP OI +8.4% breakout       │ +5.18%      │
+│ ◆ ALPHA | draft 1/3              │ signal →    │
+│ ▸ Paper Long $250 ETH-PERP       ├ spark ──────┤
+│                                  │ ▂▃▅▇█▆▇▅   │  image · grey4 pipeline
+├ act ─────────────────────────────┴─────────────┤  text · brightness 2
+│ TAP ▸ Execute signal                           │
+│ SWIPE ▲▼ feed · HOLD: voice · 2x: exit        │
+└────────────────────────────────────────────────┘
+```
+
+All 5 containers use `zOrderIndex` (all-or-nothing rule), `textColor` for
+hierarchy, and exactly one `isEventCapture: 1`. Text updates go through
+`textContainerUpgrade` (flicker-free); the sparkline rides `updateImageRawData`
+with serialized sends.
+
+## Run it — no glasses required
 
 ```bash
 npm install
-npm run dev          # Vite + backend middleware on http://localhost:5173
+npm run dev          # http://localhost:5173 — browser lens + gesture deck + API
 ```
 
-Open the page — the browser adapter renders the **actual container objects**
-the app pushes into a 576×288 green lens, and the deck below it injects the
-same OS events the firmware emits (tap, swipe, ring, long-press, double-tap,
-contextual menu, PCM audio frames).
-
-**Official simulator:**
+The browser adapter draws the **actual container objects** your app pushes —
+tap, swipe, ring, long-press, contextual menu and PCM audio are all real events
+on the real code path.
 
 ```bash
-npm run simulate     # evenhub-simulator http://localhost:5173
+npm run simulate     # official evenhub-simulator against the dev server
+npm test             # 11 vitest cases — sieve, paper engine, voice intents
+npm run build        # tsc + vite → dist/
+npm run pack         # → telepulse.ehpk
 ```
 
-**Real G2:** `npm run dev -- --host`, then `npx evenhub qr --url http://<your-ip>:5173`
-and scan with the Even app.
+**Real G2:** `npm run dev -- --host` → `npx evenhub qr --url http://<lan-ip>:5173` → scan in the Even app.
 
-**Package:** `npm run pack` → `telepulse.ehpk`
+**Live Telegram bridge (optional):** copy `.env.example` → `.env`, set
+`TELEGRAM_BOT_TOKEN` + `TELEGRAM_DEFAULT_CHAT_ID`, run `npm run server`. Without
+a token the app runs the simulated bridge — every other feature stays live.
 
-### Optional live Telegram bridge
+## What's real vs simulated
 
-```bash
-cp .env.example .env
-# set TELEGRAM_BOT_TOKEN + TELEGRAM_DEFAULT_CHAT_ID
-npm run server       # standalone backend on :8787 (or keep middleware mode)
-```
+| Integration | Status |
+|---|---|
+| Hyperliquid marks (`allMids`) | **Live API** |
+| Polymarket odds (Gamma) | **Live API** |
+| Telegram 2-way (Bot API) | **Live when token set** · simulated bridge otherwise |
+| Trading | **Paper/testnet only** — receipts log to the activity feed |
+| Gram Wallet | **Read-only watch** — no custody, ever |
+| STT | Raw PCM → intent parser (Whisper pluggable via `.env`) |
 
-Without a token the app runs in sim bridge mode — replies are logged
-server-side and receipts still land in the feed. Trade execution is **paper /
-testnet only**; Gram Wallet is **read-only watch**; nothing holds user funds
-and nothing gives financial advice.
+## Safety & rules compliance
 
-## Why it fits the rubric
-
-- **Usefulness on G2 (30%)** — a real daily loop for the exact audience
-  (Telegram signal groups → instant action) that works phone-locked.
-- **Read & write (25%)** — tap/ring/voice writes in <3s, AI drafts instead of
-  dictation, linked signal→trade is one tap end-to-end.
-- **Technical (20%)** — live Hyperliquid marks, real Telegram Bot bridge,
-  serialized image pipeline, debounced BLE-safe render queue, 11 unit tests.
-- **UX for display/voice (15%)** — 5 containers, brightness hierarchy,
-  threat-sieve dimming, sparkline on the image pipeline.
-- **Business/safety (10%)** — testnet/paper/read-only only, threat sieve,
-  secrets on the proxy, DoraHacks + Even QA rules respected.
-
-## What existed before Nov 23
-
-All application code was written during build week. Used existing public
-services/libraries only: `@evenrealities/even_hub_sdk`, `evenhub-cli`,
-`evenhub-simulator`, Vite/TypeScript/Vitest, the public Hyperliquid `info`
-API, Polymarket Gamma API, Telegram Bot API. The 576×288 layout, threat
-sieve, voice-intent router, paper engine and lens adapter are new.
+- **Money:** testnet / paper / read-only only — no user funds, no financial advice
+- **Secrets:** never bundled — `app.json` whitelists the proxy; keys live in `.env`
+- **Privacy:** phishing/drainer URLs are stripped before text reaches the lens
+- **Exit path:** root double-tap → `shutDownPageContainer(1)` system dialog
+- **Manifest:** `TelePulse HUD` ≤20 chars, no "Even", `edition 202601`, SDK floor `0.0.16`
 
 ## API feature requests (≤5)
 
-1. `Even Hub SDK` — first-party STT hook: host-side Whisper streaming instead
-   of raw PCM plumbing would collapse the hardest part of voice UX.
-2. `Telegram Bot API` — a scoped "glance token" for channel-digest reads
-   (read-only, per-chat TTL) for wearable surfaces.
-3. `Hyperliquid info` — websocket mid-price channel whitelisted for WebView
-   origins (polling works, but a push channel halves latency).
-4. `Polymarket Gamma` — a lightweight `/top-movers` endpoint (single call
-   digest for glance cards instead of full event objects).
-5. `Even Hub SDK` — `textContainerUpgrade` partial-region flags so a single
-   field (e.g. PnL) can re-render without a full-content send.
+1. **Even Hub SDK** — host-side Whisper streaming instead of raw PCM plumbing.
+2. **Telegram Bot API** — scoped "glance tokens": read-only, per-chat, TTL'd.
+3. **Hyperliquid `info`** — whitelisted websocket mid-price channel for WebView origins.
+4. **Polymarket Gamma** — a single-call `/top-movers` digest for glance cards.
+5. **Even Hub SDK** — partial-region flags on `textContainerUpgrade` so one field can re-render without a full-content send.
+
+## What existed before Nov 23
+
+All application code was written during build week. Only public libs/APIs used:
+`@evenrealities/even_hub_sdk`, `evenhub-cli`, `evenhub-simulator`, Vite,
+TypeScript, Vitest, Playwright (demo recording only), edge-tts (video voiceover
+only), and the public Hyperliquid / Polymarket / Telegram APIs.
 
 ## Repo layout
 
 ```
-app.json                     Even Hub manifest (edition 202601)
-server/api.ts                Backend proxy + paper engine + sieve + intents
-server/standalone.ts         Standalone backend (:8787)
-src/main.ts                  Companion UI + bridge selection + demo mode
-src/display/HudEngine.ts     G2 screen engine (containers, events, voice FSM)
-src/display/BrowserEvenAdapter.ts  Browser twin of the SDK bridge + lens DOM
-src/display/sparkline.ts     grey4 sparkline encoder for image containers
-tests/api.test.ts            11 tests — sieve, paper engine, voice intents
-?v=…                         append ?demo=1 for the scripted video scenario
+app.json                          Even Hub manifest (edition 202601)
+server/api.ts                     proxy · paper engine · sieve · intents
+server/standalone.ts              standalone backend (:8787)
+src/display/HudEngine.ts          G2 screen engine (containers, events, voice)
+src/display/BrowserEvenAdapter.ts browser twin of the SDK bridge + lens DOM
+src/display/sparkline.ts          grey4 sparkline encoder (image pipeline)
+src/main.ts                       companion UI · bridge select · demo mode
+tests/api.test.ts                 11 tests
+scripts/record-demo.mjs           Playwright → webm → mp4 demo recorder
+docs/telepulse-demo.mp4           narrated walkthrough (1:26)
+docs/narration.txt                voiceover script
 ```
+
+<div align="center">
+
+**TelePulse HUD** — read it, write it, three seconds flat.
+
+Built by [Kushagra Gupta](https://github.com/kushagragupta-23) for the
+[Heads Up: Even Realities Hackathon](https://dorahacks.io/hackathon/even-realities) · MIT
+
+</div>
