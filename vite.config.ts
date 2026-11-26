@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import { createReadStream, existsSync } from 'node:fs'
 import { handleApiRequest } from './server/api'
 
 export default defineConfig({
@@ -13,6 +14,11 @@ export default defineConfig({
       name: 'telepulse-backend-middleware',
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
+          if (req.url === '/demo.mp4' && existsSync('docs/telepulse-demo.mp4')) {
+            res.setHeader('Content-Type', 'video/mp4')
+            createReadStream('docs/telepulse-demo.mp4').pipe(res)
+            return
+          }
           if (req.url && req.url.startsWith('/api/')) {
             const handled = await handleApiRequest(req, res)
             if (handled) return

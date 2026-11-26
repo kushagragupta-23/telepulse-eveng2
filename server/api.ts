@@ -405,6 +405,20 @@ const state: TelePulseState = {
 }
 
 let lastMarketFetchMs = 0
+let seededRebased = false
+
+/** Rebase seeded demo positions onto live marks once so PnL stays believable. */
+function rebaseSeededPositions(): void {
+  if (seededRebased) return
+  seededRebased = true
+  const offsets: Record<string, number> = { 'pos-hl-1': 0.021, 'pos-hl-2': 0.031 }
+  for (const pos of state.hyperliquid.positions) {
+    const asset = state.hyperliquid.assets.find(a => a.symbol === pos.symbol)
+    if (!asset) continue
+    const move = offsets[pos.id] ?? 0.02
+    pos.entryPrice = Number((asset.markPrice / (1 + move)).toFixed(asset.markPrice > 100 ? 2 : 4))
+  }
+}
 
 async function refreshLiveMarkets(): Promise<void> {
   const now = Date.now()
@@ -435,6 +449,7 @@ async function refreshLiveMarkets(): Promise<void> {
         }
       }
       state.pairing.liveMarketSource = 'LIVE_API'
+      rebaseSeededPositions()
     }
   } catch {
     // Keep last known prices and gently jitter sparkline so simulator demos stay lively offline
@@ -759,8 +774,9 @@ export async function processVoiceIntent(params: {
   for (const sym of ['eth', 'btc', 'sol', 'hype', 'ton']) {
     if (lower.includes(sym) && (lower.includes('long') || lower.includes('short') || lower.includes('buy'))) {
       const side = lower.includes('short') ? 'SHORT' : 'LONG'
-      const amountMatch = rawTranscript.match(/\$?(\d{2,4})/)
-      const sizeUsd = amountMatch ? Math.min(2000, Math.max(25, Number(amountMatch[1]))) : 250
+      // Take the last number ≥ 25 — skips times/ids like "14:30"
+      const nums = (rawTranscript.match(/\d{2,5}/g) ?? []).map(Number).filter(n => n >= 25)
+      const sizeUsd = nums.length ? Math.min(2000, nums[nums.length - 1]) : 250
       const tradeRes = await executePaperTrade({
         protocol: 'Hyperliquid',
         symbol: sym.toUpperCase(),
